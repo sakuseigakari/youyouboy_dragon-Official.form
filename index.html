@@ -3,9 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>youyouboy_dragon Official宛てメッセージフォーム</title>
+  <title>youyouboy_dragon Official宛て連絡フォーム</title>
   <style>
-    /* 背景グラデーション */
     body {
       background: linear-gradient(135deg, #667eea, #764ba2);
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -18,7 +17,6 @@
       padding: 20px;
     }
 
-    /* フォームコンテナ */
     .form-container {
       background: rgba(255, 255, 255, 0.1);
       padding: 30px 40px;
@@ -45,6 +43,7 @@
       color: #dcdcdc;
     }
 
+    input[type="text"],
     input[type="email"],
     textarea {
       width: 100%;
@@ -60,6 +59,7 @@
       transition: background 0.3s ease;
     }
 
+    input[type="text"]:focus,
     input[type="email"]:focus,
     textarea:focus {
       background: rgba(255, 255, 255, 0.3);
@@ -86,7 +86,6 @@
       box-shadow: 0 6px 20px rgba(74, 144, 226, 0.7);
     }
 
-    /* スマホ対応 */
     @media (max-width: 480px) {
       .form-container {
         padding: 25px 20px;
@@ -98,13 +97,17 @@
 <body>
 
   <div class="form-container">
-    <h1>youyouboy_dragon Official宛てメッセージフォーム</h1>
+    <h1>youyouboy_dragon Official宛て連絡フォーム</h1>
     <form action="https://formspree.io/f/xvgrrpdl" method="POST">
+      
+      <label for="name">お名前:</label>
+      <input type="text" id="name" name="name" placeholder="あなたの名前" required />
+
       <label for="email">メールアドレス:</label>
       <input type="email" id="email" name="email" placeholder="your@email.com" required />
 
       <label for="message">メッセージ:</label>
-      <textarea id="message" name="message" rows="5" placeholder="ここにメッセージを書いてください"></textarea>
+      <textarea id="message" name="message" rows="5" placeholder="ここにメッセージを書いてください" required></textarea>
 
       <button type="submit">送信</button>
     </form>
