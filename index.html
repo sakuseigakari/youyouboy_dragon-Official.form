@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>youyouboy_dragon Official宛て連絡フォーム</title>
+  <title>応募フォーム</title>
   <style>
     body {
       background: linear-gradient(135deg, #667eea, #764ba2);
@@ -15,6 +15,7 @@
       height: 100vh;
       margin: 0;
       padding: 20px;
+      position: relative;
     }
 
     .form-container {
@@ -25,6 +26,7 @@
       width: 100%;
       max-width: 420px;
       backdrop-filter: blur(10px);
+      z-index: 1;
     }
 
     h1 {
@@ -92,13 +94,73 @@
         max-width: 100%;
       }
     }
+
+    /* 警告モーダルのスタイル */
+    #warningModal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0; top: 0; right: 0; bottom: 0;
+      background-color: rgba(255, 0, 0, 0.85);
+      color: white;
+      font-weight: bold;
+      font-size: 18px;
+      text-align: center;
+      padding: 30px 20px;
+      box-sizing: border-box;
+      backdrop-filter: blur(4px);
+    }
+
+    #warningModal.show {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #warningModal h2 {
+      font-size: 32px;
+      margin-bottom: 20px;
+      text-shadow: 0 0 8px #ff0000;
+    }
+
+    #warningModal p {
+      margin: 10px 0;
+      font-size: 20px;
+      text-shadow: 0 0 6px #ff4444;
+    }
+
+    #countdownInModal {
+      font-size: 28px;
+      margin: 20px 0;
+      text-shadow: 0 0 10px #fff;
+    }
+
+    #closeWarningBtn {
+      background: white;
+      color: #cc0000;
+      font-weight: 700;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 25px;
+      font-size: 18px;
+      cursor: pointer;
+      box-shadow: 0 0 10px #ff0000;
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+
+    #closeWarningBtn:hover {
+      background: #cc0000;
+      color: white;
+      box-shadow: 0 0 15px #ff5555;
+    }
   </style>
 </head>
 <body>
 
-  <div class="form-container">
-    <h1>youyouboy_dragon Official宛て連絡フォーム</h1>
-    <form action="https://formspree.io/f/xvgrrpdl" method="POST">
+  <div class="form-container" aria-live="polite">
+    <h1>応募フォーム</h1>
+    <form id="form" action="https://formspree.io/f/xvgrrpdl" method="POST">
       
       <label for="name">お名前:</label>
       <input type="text" id="name" name="name" placeholder="あなたの名前" required />
@@ -112,6 +174,137 @@
       <button type="submit">送信</button>
     </form>
   </div>
+
+  <!-- 警告モーダル -->
+  <div id="warningModal" role="alertdialog" aria-modal="true" aria-labelledby="warningTitle" aria-describedby="warningDesc">
+    <h2 id="warningTitle">警告</h2>
+    <p id="warningDesc">送信の連打は迷惑なのでおやめください。</p>
+    <div id="countdownInModal">60秒</div>
+    <button id="closeWarningBtn" type="button">閉じる</button>
+  </div>
+
+  <script>
+    const form = document.getElementById("form");
+    const emailInput = document.getElementById("email");
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const WAIT_TIME = 60; // 秒
+
+    const warningModal = document.getElementById('warningModal');
+    const countdownInModal = document.getElementById('countdownInModal');
+    const closeWarningBtn = document.getElementById('closeWarningBtn');
+
+    let timer = null;
+
+    // カウントダウン開始関数（ボタン用）
+    function startCountdown(remaining) {
+      submitBtn.disabled = true;
+      let countdown = remaining;
+      submitBtn.textContent = `あと${countdown}秒で再送信可能`;
+
+      timer = setInterval(() => {
+        countdown--;
+        if (countdown > 0) {
+          submitBtn.textContent = `あと${countdown}秒で再送信可能`;
+        } else {
+          clearInterval(timer);
+          submitBtn.disabled = false;
+          submitBtn.textContent = "送信";
+          localStorage.removeItem('lastSubmitTime');
+          hideWarningModal();
+        }
+      }, 1000);
+    }
+
+    // カウントダウン開始関数（警告モーダル用）
+    function startModalCountdown(remaining) {
+      let countdown = remaining;
+      countdownInModal.textContent = `${countdown}秒`;
+
+      if(timer) clearInterval(timer);
+      timer = setInterval(() => {
+        countdown--;
+        if (countdown > 0) {
+          countdownInModal.textContent = `${countdown}秒`;
+          submitBtn.textContent = `あと${countdown}秒で再送信可能`;
+        } else {
+          clearInterval(timer);
+          submitBtn.disabled = false;
+          submitBtn.textContent = "送信";
+          localStorage.removeItem('lastSubmitTime');
+          hideWarningModal();
+        }
+      }, 1000);
+    }
+
+    // 警告モーダルを表示
+    function showWarningModal(remaining) {
+      warningModal.classList.add('show');
+      startModalCountdown(remaining);
+    }
+
+    // 警告モーダルを非表示
+    function hideWarningModal() {
+      warningModal.classList.remove('show');
+    }
+
+    // ページ読み込み時に送信時間をチェックしてカウントダウンを再開
+    window.addEventListener('load', () => {
+      const lastSubmit = localStorage.getItem('lastSubmitTime');
+      if (lastSubmit) {
+        const elapsed = Math.floor((Date.now() - parseInt(lastSubmit, 10)) / 1000);
+        if (elapsed < WAIT_TIME) {
+          startCountdown(WAIT_TIME - elapsed);
+        } else {
+          localStorage.removeItem('lastSubmitTime');
+          submitBtn.disabled = false;
+          submitBtn.textContent = "送信";
+          hideWarningModal();
+        }
+      }
+    });
+
+    form.addEventListener("submit", function(event) {
+      const email = emailInput.value.trim().toLowerCase();
+      const [local, domain] = email.split("@");
+
+      const bannedDomains = [
+        "mailinator.com", "10minutemail.com", "guerrillamail.com",
+        "tempmail.com", "example.com", "fake.com"
+      ];
+
+      const bannedLocals = [
+        "fake", "test", "admin", "dummy", "noreply", "no-reply"
+      ];
+
+      if (
+        !domain ||
+        bannedDomains.includes(domain) ||
+        bannedLocals.includes(local)
+      ) {
+        alert("そのメールアドレスは使用できません。別のアドレスを入力してください。");
+        event.preventDefault();
+        return;
+      }
+
+      const lastSubmit = localStorage.getItem('lastSubmitTime');
+      const now = Date.now();
+
+      if (lastSubmit && now - parseInt(lastSubmit, 10) < WAIT_TIME * 1000) {
+        event.preventDefault();
+        const remaining = WAIT_TIME - Math.floor((now - parseInt(lastSubmit, 10)) / 1000);
+        showWarningModal(remaining);
+        return;
+      }
+
+      localStorage.setItem('lastSubmitTime', now);
+      startCountdown(WAIT_TIME);
+    });
+
+    closeWarningBtn.addEventListener('click', () => {
+      alert('連続送信はご遠慮ください。誠に恐れ入りますが、時間を置いてから再度お試しください。');
+      hideWarningModal();
+    });
+  </script>
 
 </body>
 </html>
