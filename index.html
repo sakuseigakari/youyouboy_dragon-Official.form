@@ -153,7 +153,6 @@
       <label for="message">メッセージ:</label>
       <textarea id="message" name="message" rows="5" required></textarea>
 
-      <!-- 送信ボタンにidを追加しました -->
       <button type="submit" id="submitButton">送信</button>
     </form>
   </div>
@@ -236,7 +235,6 @@
         const now = Date.now();
         const elapsed = Math.floor((now - parseInt(lastSubmit, 10)) / 1000);
         if (elapsed < WAIT_TIME) {
-          // **重要な変更点:**
           // ページロード時にクールダウン期間中であれば、カウントダウンを再開する
           // ただし、警告オーバーレイは表示しない
           startCountdown(WAIT_TIME - elapsed);
@@ -299,6 +297,19 @@
         event.preventDefault(); // クリックイベントのデフォルト動作（フォーム送信など）を停止
         const remaining = Math.ceil((WAIT_TIME * 1000 - (now - parseInt(lastSubmit, 10))) / 1000);
         showWarning(remaining); // 警告画面を表示
+      }
+    });
+
+    // **【追加部分】** Enterキーでの意図しないフォーム送信を防止するイベントリスナー
+    form.addEventListener('keypress', function(e) {
+      // Enterキーが押された場合
+      if (e.key === 'Enter') {
+        // 押された要素が<textarea>ではない場合（inputフィールドの場合など）
+        // フォームのデフォルトのEnterによる送信を防止
+        if (e.target.tagName !== 'TEXTAREA') {
+          e.preventDefault();
+        }
+        // <textarea>の場合は、通常通り改行を許可するため、preventDefaultは行わない
       }
     });
 
