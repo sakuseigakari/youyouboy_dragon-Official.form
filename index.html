@@ -168,7 +168,6 @@
   <script>
     const form = document.getElementById("form");
     const emailInput = document.getElementById("email");
-    // submitButtonのidを使ってボタンを取得するように変更
     const submitBtn = document.getElementById("submitButton");
     const overlay = document.getElementById("warningOverlay");
     const countdownText = document.getElementById("countdownText");
@@ -177,6 +176,7 @@
 
     /**
      * カウントダウンを開始し、ボタンを無効化します。
+     * この関数は、ボタンのテキストを更新しますが、警告オーバーレイは表示しません。
      * @param {number} remaining 残り秒数
      */
     function startCountdown(remaining) {
@@ -193,7 +193,10 @@
         countdown--;
         if (countdown > 0) {
           submitBtn.textContent = `あと${countdown}秒で再送信可能`;
-          countdownText.textContent = `あと${countdown}秒で再送信可能です`; // 警告画面のカウントダウンも更新
+          // 警告画面が表示されている場合のみ、警告画面のカウントダウンも更新
+          if (overlay.classList.contains("show")) {
+              countdownText.textContent = `あと${countdown}秒で再送信可能です`;
+          }
         } else {
           // カウントダウン終了時の処理
           clearInterval(countdownInterval); // インターバルをクリア
@@ -209,12 +212,14 @@
 
     /**
      * 警告画面を表示し、カウントダウンを開始（または更新）します。
+     * この関数は、ユーザーがボタンをクリックした場合にのみ呼び出されるべきです。
      * @param {number} remaining 残り秒数
      */
     function showWarning(remaining) {
       overlay.classList.add("show"); // オーバーレイを表示
       countdownText.textContent = `あと${remaining}秒で再送信可能です`;
-      startCountdown(remaining); // 警告表示中でもカウントダウンを更新
+      // 警告表示中もカウントダウンを更新するためにstartCountdownを呼び出す
+      startCountdown(remaining);
     }
 
     /**
@@ -228,10 +233,14 @@
     window.addEventListener("load", () => {
       const lastSubmit = localStorage.getItem('lastSubmitTime');
       if (lastSubmit) {
-        const elapsed = Math.floor((Date.now() - parseInt(lastSubmit, 10)) / 1000);
+        const now = Date.now();
+        const elapsed = Math.floor((now - parseInt(lastSubmit, 10)) / 1000);
         if (elapsed < WAIT_TIME) {
-          // ページ読み込み時にクールダウン中であれば、警告を表示してカウントダウンを開始
-          showWarning(WAIT_TIME - elapsed);
+          // **変更点:** ページ読み込み時は警告を表示せず、
+          // ボタンを無効化し、テキストを「送信」のままにする
+          submitBtn.disabled = true;
+          submitBtn.textContent = "送信"; // ボタンのテキストは「送信」のままにする
+          // ここではstartCountdownは呼び出さない！
         } else {
           // クールダウン期間が過ぎていれば、ローカルストレージをクリアしボタンを有効にする
           localStorage.removeItem('lastSubmitTime');
@@ -275,13 +284,14 @@
       // 送信成功とみなし、現在時刻をローカルストレージに記録
       localStorage.setItem('lastSubmitTime', now.toString());
       // フォームが実際に送信される直前にカウントダウンを開始
+      // ここでstartCountdownを呼び出すことで、送信直後からボタンに残り秒数が表示される
       startCountdown(WAIT_TIME);
       // ここではevent.preventDefault()は行いません。
       // Formspreeへの送信が完了するとページ遷移やリダイレクトが行われるため、
       // この時点ではフォームのデフォルトの送信動作を許可します。
     });
 
-    // submitボタンがクリックされた時のイベントリスナーを追加（重要）
+    // submitボタンがクリックされた時のイベントリスナーを追加
     // disabled状態のボタンはsubmitイベントを発火しないため、クリックイベントで検知します
     submitBtn.addEventListener("click", function(event) {
       const lastSubmit = localStorage.getItem('lastSubmitTime');
