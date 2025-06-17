@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>youyouboy_dragon Official宛て連絡フォーム</title>
+  <title>応募フォーム</title>
   <style>
     body {
       background: linear-gradient(135deg, #667eea, #764ba2);
@@ -142,7 +142,7 @@
 <body>
 
   <div class="form-container">
-    <h1>youyouboy_dragon Official宛て連絡フォーム</h1>
+    <h1>応募フォーム</h1>
     <form id="form" action="https://formspree.io/f/xvgrrpdl" method="POST">
       <label for="name">お名前:</label>
       <input type="text" id="name" name="name" required />
@@ -236,11 +236,10 @@
         const now = Date.now();
         const elapsed = Math.floor((now - parseInt(lastSubmit, 10)) / 1000);
         if (elapsed < WAIT_TIME) {
-          // **変更点:** ページ読み込み時は警告を表示せず、
-          // ボタンを無効化し、テキストを「送信」のままにする
-          submitBtn.disabled = true;
-          submitBtn.textContent = "送信"; // ボタンのテキストは「送信」のままにする
-          // ここではstartCountdownは呼び出さない！
+          // **重要な変更点:**
+          // ページロード時にクールダウン期間中であれば、カウントダウンを再開する
+          // ただし、警告オーバーレイは表示しない
+          startCountdown(WAIT_TIME - elapsed);
         } else {
           // クールダウン期間が過ぎていれば、ローカルストレージをクリアしボタンを有効にする
           localStorage.removeItem('lastSubmitTime');
@@ -263,8 +262,6 @@
 
       // 禁止されているメールアドレスのチェック
       if (!domain || bannedDomains.includes(domain) || bannedLocals.includes(local)) {
-        // alertの代わりにカスタムメッセージボックスを使用することを推奨します
-        // 今回はユーザーの元のコードに合わせてalertを使用
         alert("そのメールアドレスは使用できません。別のアドレスを入力してください。");
         event.preventDefault(); // フォームの送信を停止
         return;
