@@ -153,7 +153,7 @@
       <label for="message">メッセージ:</label>
       <textarea id="message" name="message" rows="5" required></textarea>
 
-      <button type="submit" id="submitButton">送信</button>
+      <button type="submit">送信</button>
     </form>
   </div>
 
@@ -167,79 +167,48 @@
   <script>
     const form = document.getElementById("form");
     const emailInput = document.getElementById("email");
-    const submitBtn = document.getElementById("submitButton");
+    const submitBtn = form.querySelector('button[type="submit"]');
     const overlay = document.getElementById("warningOverlay");
     const countdownText = document.getElementById("countdownText");
     const WAIT_TIME = 60;
-    let countdownInterval = null; // カウントダウンのsetIntervalを保持する変数
 
-    /**
-     * カウントダウンを開始し、ボタンを無効化します。
-     * この関数は、ボタンのテキストを更新しますが、警告オーバーレイは表示しません。
-     * @param {number} remaining 残り秒数
-     */
     function startCountdown(remaining) {
-      // 既存のインターバルがあればクリアして重複実行を防ぐ
-      if (countdownInterval) {
-        clearInterval(countdownInterval);
-      }
-
-      submitBtn.disabled = true; // ボタンを無効にする
+      submitBtn.disabled = true;
       let countdown = remaining;
-      submitBtn.textContent = `あと${countdown}秒で再送信可能`; // ボタンに残り秒数を表示
+      submitBtn.textContent = `あと${countdown}秒で再送信可能`;
 
-      countdownInterval = setInterval(() => {
+      const timer = setInterval(() => {
         countdown--;
         if (countdown > 0) {
           submitBtn.textContent = `あと${countdown}秒で再送信可能`;
-          // 警告画面が表示されている場合のみ、警告画面のカウントダウンも更新
-          if (overlay.classList.contains("show")) {
-              countdownText.textContent = `あと${countdown}秒で再送信可能です`;
-          }
+          countdownText.textContent = `あと${countdown}秒で再送信可能です`;
         } else {
-          // カウントダウン終了時の処理
-          clearInterval(countdownInterval); // インターバルをクリア
-          countdownInterval = null; // 変数を初期化
-          submitBtn.disabled = false; // ボタンを有効にする
-          submitBtn.textContent = "送信"; // ボタンのテキストを元に戻す
-          localStorage.removeItem('lastSubmitTime'); // ローカルストレージの記録を削除
-          countdownText.textContent = ""; // 警告画面のカウントダウンテキストをクリア
-          closeWarning(); // カウントダウン終了時に警告画面も閉じる
+          clearInterval(timer);
+          submitBtn.disabled = false;
+          submitBtn.textContent = "送信";
+          localStorage.removeItem('lastSubmitTime');
+          countdownText.textContent = "";
         }
       }, 1000);
     }
 
-    /**
-     * 警告画面を表示し、カウントダウンを開始（または更新）します。
-     * この関数は、ユーザーがボタンをクリックした場合にのみ呼び出されるべきです。
-     * @param {number} remaining 残り秒数
-     */
     function showWarning(remaining) {
-      overlay.classList.add("show"); // オーバーレイを表示
+      overlay.classList.add("show");
       countdownText.textContent = `あと${remaining}秒で再送信可能です`;
-      // 警告表示中もカウントダウンを更新するためにstartCountdownを呼び出す
-      startCountdown(remaining);
     }
 
-    /**
-     * 警告画面を閉じます。
-     */
     function closeWarning() {
-      overlay.classList.remove("show"); // オーバーレイを非表示
+      overlay.classList.remove("show");
     }
 
-    // ページ読み込み時の処理
+    // ページ読み込み時
     window.addEventListener("load", () => {
       const lastSubmit = localStorage.getItem('lastSubmitTime');
       if (lastSubmit) {
-        const now = Date.now();
-        const elapsed = Math.floor((now - parseInt(lastSubmit, 10)) / 1000);
+        const elapsed = Math.floor((Date.now() - parseInt(lastSubmit, 10)) / 1000);
         if (elapsed < WAIT_TIME) {
-          // ページロード時にクールダウン期間中であれば、カウントダウンを再開する
-          // ただし、警告オーバーレイは表示しない
           startCountdown(WAIT_TIME - elapsed);
         } else {
-          // クールダウン期間が過ぎていれば、ローカルストレージをクリアしボタンを有効にする
           localStorage.removeItem('lastSubmitTime');
           submitBtn.disabled = false;
           submitBtn.textContent = "送信";
@@ -247,7 +216,6 @@
       }
     });
 
-    // フォーム送信時のイベントリスナー
     form.addEventListener("submit", function(event) {
       const email = emailInput.value.trim().toLowerCase();
       const [local, domain] = email.split("@");
@@ -258,61 +226,26 @@
       ];
       const bannedLocals = ["fake", "test", "admin", "dummy", "noreply", "no-reply"];
 
-      // 禁止されているメールアドレスのチェック
       if (!domain || bannedDomains.includes(domain) || bannedLocals.includes(local)) {
         alert("そのメールアドレスは使用できません。別のアドレスを入力してください。");
-        event.preventDefault(); // フォームの送信を停止
+        event.preventDefault();
         return;
       }
 
       const lastSubmit = localStorage.getItem('lastSubmitTime');
       const now = Date.now();
 
-      // クールダウン期間中の送信チェック
       if (lastSubmit && now - parseInt(lastSubmit, 10) < WAIT_TIME * 1000) {
-        event.preventDefault(); // フォームの送信を停止
-        const remaining = Math.ceil((WAIT_TIME * 1000 - (now - parseInt(lastSubmit, 10))) / 1000);
-        showWarning(remaining); // 警告画面を表示
+        event.preventDefault();
+        const remaining = Math.ceil((WAIT_TIME * 1000 - (now - lastSubmit)) / 1000);
+        showWarning(remaining);
         return;
       }
 
-      // 送信成功とみなし、現在時刻をローカルストレージに記録
+      // 送信成功とみなして時刻記録
       localStorage.setItem('lastSubmitTime', now.toString());
-      // フォームが実際に送信される直前にカウントダウンを開始
-      // ここでstartCountdownを呼び出すことで、送信直後からボタンに残り秒数が表示される
       startCountdown(WAIT_TIME);
-      // ここではevent.preventDefault()は行いません。
-      // Formspreeへの送信が完了するとページ遷移やリダイレクトが行われるため、
-      // この時点ではフォームのデフォルトの送信動作を許可します。
     });
-
-    // submitボタンがクリックされた時のイベントリスナーを追加
-    // disabled状態のボタンはsubmitイベントを発火しないため、クリックイベントで検知します
-    submitBtn.addEventListener("click", function(event) {
-      const lastSubmit = localStorage.getItem('lastSubmitTime');
-      const now = Date.now();
-
-      // ボタンがdisabledであり、かつクールダウン期間中であれば警告を表示
-      if (submitBtn.disabled && lastSubmit && now - parseInt(lastSubmit, 10) < WAIT_TIME * 1000) {
-        event.preventDefault(); // クリックイベントのデフォルト動作（フォーム送信など）を停止
-        const remaining = Math.ceil((WAIT_TIME * 1000 - (now - parseInt(lastSubmit, 10))) / 1000);
-        showWarning(remaining); // 警告画面を表示
-      }
-    });
-
-    // **【追加部分】** Enterキーでの意図しないフォーム送信を防止するイベントリスナー
-    form.addEventListener('keypress', function(e) {
-      // Enterキーが押された場合
-      if (e.key === 'Enter') {
-        // 押された要素が<textarea>ではない場合（inputフィールドの場合など）
-        // フォームのデフォルトのEnterによる送信を防止
-        if (e.target.tagName !== 'TEXTAREA') {
-          e.preventDefault();
-        }
-        // <textarea>の場合は、通常通り改行を許可するため、preventDefaultは行わない
-      }
-    });
-
   </script>
 </body>
 </html>
