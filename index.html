@@ -1,10 +1,9 @@
-
-    <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>youyouboy_ dragon Official宛て連絡フォーム</title>
+  <title>youyouboy_ dragonOfficial宛て連絡フォーム</title>
   <style>
     body {
       background: linear-gradient(135deg, #667eea, #764ba2);
@@ -196,6 +195,7 @@
 
     let timer = null;
 
+    // カウントダウン開始関数（ボタン用）
     function startCountdown(remaining) {
       submitBtn.disabled = true;
       let countdown = remaining;
@@ -215,11 +215,12 @@
       }, 1000);
     }
 
+    // カウントダウン開始関数（警告モーダル用）
     function startModalCountdown(remaining) {
       let countdown = remaining;
       countdownInModal.textContent = `${countdown}秒`;
 
-      if (timer) clearInterval(timer);
+      if(timer) clearInterval(timer);
       timer = setInterval(() => {
         countdown--;
         if (countdown > 0) {
@@ -235,15 +236,18 @@
       }, 1000);
     }
 
+    // 警告モーダルを表示
     function showWarningModal(remaining) {
       warningModal.classList.add('show');
       startModalCountdown(remaining);
     }
 
+    // 警告モーダルを非表示
     function hideWarningModal() {
       warningModal.classList.remove('show');
     }
 
+    // ページ読み込み時に送信時間をチェックしてカウントダウンを再開
     window.addEventListener('load', () => {
       const lastSubmit = localStorage.getItem('lastSubmitTime');
       if (lastSubmit) {
@@ -259,9 +263,7 @@
       }
     });
 
-    form.addEventListener("submit", async function (event) {
-      event.preventDefault(); // フォームの自動送信を止める
-
+    form.addEventListener("submit", function(event) {
       const email = emailInput.value.trim().toLowerCase();
       const [local, domain] = email.split("@");
 
@@ -269,6 +271,7 @@
         "mailinator.com", "10minutemail.com", "guerrillamail.com",
         "tempmail.com", "example.com", "fake.com"
       ];
+
       const bannedLocals = [
         "fake", "test", "admin", "dummy", "noreply", "no-reply"
       ];
@@ -279,6 +282,7 @@
         bannedLocals.includes(local)
       ) {
         alert("そのメールアドレスは使用できません。別のアドレスを入力してください。");
+        event.preventDefault();
         return;
       }
 
@@ -286,33 +290,14 @@
       const now = Date.now();
 
       if (lastSubmit && now - parseInt(lastSubmit, 10) < WAIT_TIME * 1000) {
+        event.preventDefault();
         const remaining = WAIT_TIME - Math.floor((now - parseInt(lastSubmit, 10)) / 1000);
         showWarningModal(remaining);
         return;
       }
 
-      // フォームデータをFormspreeに送信（fetchを使って手動送信）
-      const formData = new FormData(form);
-      try {
-        const response = await fetch(form.action, {
-          method: form.method,
-          body: formData,
-          headers: {
-            'Accept': 'application/json'
-          }
-        });
-
-        if (response.ok) {
-          alert("送信に成功しました！");
-          localStorage.setItem('lastSubmitTime', now);
-          startCountdown(WAIT_TIME);
-          form.reset();
-        } else {
-          alert("送信に失敗しました。しばらくしてから再試行してください。");
-        }
-      } catch (error) {
-        alert("ネットワークエラーが発生しました。送信できませんでした。");
-      }
+      localStorage.setItem('lastSubmitTime', now);
+      startCountdown(WAIT_TIME);
     });
 
     closeWarningBtn.addEventListener('click', () => {
